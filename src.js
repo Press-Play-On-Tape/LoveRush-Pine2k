@@ -23,6 +23,7 @@ var score = 0;
 var lives = 3;
 var ShipAnim = 0;
 
+const HUD_BG = file("HUD_BG", 0); // load the ship frame1
 const PlayerShip_F1 = file("PlayerShip_F1", 0); // load the ship frame1
 const PlayerShip_F2 = file("PlayerShip_F2", 0); // load the ship frame 2
 const PlayerShip_shadow = file("PlayerShip_shadow", 0); // load the ship shadow
@@ -67,7 +68,7 @@ function collision(x1, y1, x2, y2) {
 }
 
 function waitForInput() {
-    if((pressed("UP")) && (PlayerY > 2))
+    if((pressed("UP")) && (PlayerY > 18))
         PlayerY-=2;
     if((pressed("DOWN")) && (PlayerY < 160))
         PlayerY+=2;
@@ -178,20 +179,28 @@ function EnemyUpdate(i)
     
 }
 
+function HUD()
+{
+       var x = 0;
+       for( var counter = 0; counter < 28; ++counter ){ sprite(x, 0, HUD_BG); x += 8; }
+}
+
 function update()
 {
 
     fill(65)
     bgScroll();
     waitForInput();
-    ShipAnim++;
+
+    for(var i = 0; i< length(enemiesY); ++i) {
+        EnemyUpdate(i);
+    }
+    
+        ShipAnim++;
     if((ShipAnim/3)%2==0)
         sprite(PlayerX, PlayerY, PlayerShip_F1);
     else
         sprite(PlayerX, PlayerY, PlayerShip_F2);
     sprite(PlayerX+20, PlayerY+20, PlayerShip_shadow);
-    
-    for(var i = 0; i< length(enemiesY); ++i) {
-        EnemyUpdate(i);
-    }
+    HUD();
 }
