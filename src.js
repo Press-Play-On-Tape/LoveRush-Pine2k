@@ -30,6 +30,8 @@ const PlayerShip_shadow = file("PlayerShip_shadow", 0); // load the ship shadow
 
 const Enemy1 = file("Enemy1", 0); // load the enemy gfx
 
+const heart = builtin("sHeart"); //Hearts for lives
+
 const Heart_f1 = file("Heart_f1", 0); // load the heart gfx
 const Heart_f2 = file("Heart_f2", 0); // load the heart gfx
 const Heart_f3 = file("Heart_f3", 0); // load the heart gfx
@@ -173,16 +175,30 @@ function EnemyUpdate(i)
         
         if (collide) {
             
+             lives -=1;
+             io("VOLUME", 127);
+             io("DURATION", 70);
+             sound(random(44, 47));
              console("collision");
             
         }
     
 }
 
+
 function HUD()
 {
        var x = 0;
        for( var counter = 0; counter < 28; ++counter ){ sprite(x, 0, HUD_BG); x += 8; }
+           for(var i=0; i<lives; ++i)
+        sprite(80 + (i * 8), 4, heart);
+        cursor(60, 165);
+        color(7);
+        cursor(8,4)
+        print(("SCORE")); color(0);
+        color(7);
+        cursor(50,4)
+        print((SCORE)); color(0);
 }
 
 function update()
