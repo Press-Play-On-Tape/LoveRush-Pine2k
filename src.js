@@ -16,13 +16,14 @@ var enemiesS = new Array(4);  // Speed, 2 slow - 5 fastest
 var bulletsX = new Array(4);
 var bulletsY = new Array(4);
 
-var bgLX = 0;
+
+var BGchange = 65;
 var bgLY = 0;
 var TopbgLX = 0;
 var TopbgLY = 0;
 var Level = 1;
 var score = 0;
-var lives = 3;
+var lives = 5;
 var ShipAnim = 0;
 var score = 0;
 
@@ -39,7 +40,7 @@ const heart = builtin("sHeart"); //Hearts for lives
 const bgL = file("bgL",0); // load the Left Background bottom layer image
 const TopBgL = file("TopBgL",0); // load the Left Background Top layer image
 
-music("steamth.raw");
+music("lrmusic.raw");
 
 
 
@@ -55,7 +56,7 @@ function fireBullet()
 {
     for (var i = 0; i < 4; ++i)
     {
-       if (bulletsY[i] < 0)
+       if (bulletsY[i] <= 0)
        {
             bulletsX[i] = PlayerX + 6;          
             bulletsY[i] = PlayerY - 2;   
@@ -77,6 +78,7 @@ function moveBullet(bulletIndex)
             if (collision(bulletsX[bulletIndex], bulletsY[bulletIndex], enemiesX[i], enemiesY[i]))
             {
                score += 5;
+               //BGchange +=1;
                EnemySpawn(i, 32, 64);
                bulletsY[bulletIndex] = -5;
                break;
@@ -106,7 +108,7 @@ function waitForInput()
         PlayerX-=2;
     if((pressed("RIGHT")) && (PlayerX < 190))
         PlayerX+=2;
-    if(justPressed("B"))
+    if(justPressed("A"))
     {
         fireBullet();
     }
@@ -232,7 +234,7 @@ function HUD()
         
         for(var i=0; i<lives; ++i)
         {
-            sprite(80 + (i * 8), 4, heart);
+            sprite(110 + (i * 8), 4, heart);
         }
 
         color(7);
@@ -246,6 +248,11 @@ function update()
 {
 
     fill(65)
+    //fill(BGchange) // Crazy Background Effect but take 2% progmem
+    //if (BGchange < 70)
+    //BGchange +=1;
+    //else BGchange = 65
+    
     bgScroll();
     waitForInput();
 
