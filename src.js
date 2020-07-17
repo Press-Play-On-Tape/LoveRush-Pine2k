@@ -3,18 +3,20 @@ if( file("images.res", 0) != 1 ){
     exit();
 }
 
-
 var PlayerX = 60;
 var PlayerY = 140;
+var level = 4;              // Starting level (also number of enemies / bullets cannot exceed NUMBER_OF_ENEMIES)
 
-var enemiesX = new Array(4);
-var enemiesY = new Array(4);
-var enemiesD = new Array(4);  // Direction where 0 = left, 1 = straight fown, 2 = right
-var enemiesL = new Array(4);  // Length of travel
-var enemiesS = new Array(4);  // Speed, 2 slow - 5 fastest
+const NUMBER_OF_ENEMIES = 10;
 
-var bulletsX = new Array(4);
-var bulletsY = new Array(4);
+var enemiesX = new Array(NUMBER_OF_ENEMIES);
+var enemiesY = new Array(NUMBER_OF_ENEMIES);
+var enemiesD = new Array(NUMBER_OF_ENEMIES);  // Direction where 0 = left, 1 = straight fown, 2 = right
+var enemiesL = new Array(NUMBER_OF_ENEMIES);  // Length of travel
+var enemiesS = new Array(NUMBER_OF_ENEMIES);  // Speed, 2 slow - 5 fastest
+
+var bulletsX = new Array(NUMBER_OF_ENEMIES);
+var bulletsY = new Array(NUMBER_OF_ENEMIES);
 
 
 var BGchange = 65;
@@ -46,7 +48,7 @@ music("lrmusic.raw");
 
 // Position enemies and bullets before start of game ..
 
-for (var i = 0; i < 4; ++i)
+for (var i = 0; i < level; ++i)
 {
     EnemySpawn(i, (i * 32), (i * 32) + 32);
     bulletsY[i] = -5;
@@ -54,7 +56,7 @@ for (var i = 0; i < 4; ++i)
 
 function fireBullet()
 {
-    for (var i = 0; i < 4; ++i)
+    for (var i = 0; i < level; ++i)
     {
        if (bulletsY[i] <= 0)
        {
@@ -73,7 +75,7 @@ function moveBullet(bulletIndex)
         sprite(bulletsX[bulletIndex], bulletsY[bulletIndex], Bullet);
         
         // Did we hit an enemy?
-        for (var i = 0; i < 4; ++i)
+        for (var i = 0; i < level; ++i)
         {
             if (collision(bulletsX[bulletIndex], bulletsY[bulletIndex], enemiesX[i], enemiesY[i]))
             {
@@ -255,8 +257,13 @@ function update()
     
     bgScroll();
     waitForInput();
+    
+    
+    if (score > 80)         level = 10;
+    else if (score > 40)    level = 7;
+    else level = 4;
 
-    for(var i = 0; i< 4; ++i)
+    for(var i = 0; i < level; ++i)
     {
         EnemyUpdate(i);
         moveBullet(i);
