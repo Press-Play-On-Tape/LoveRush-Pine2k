@@ -18,7 +18,6 @@ var enemiesS = new Array(NUMBER_OF_ENEMIES);  // Speed, 2 slow - 5 fastest
 var bulletsX = new Array(NUMBER_OF_ENEMIES);
 var bulletsY = new Array(NUMBER_OF_ENEMIES);
 
-
 var BGchange = 65;
 var bgLY = 0;
 var TopbgLX = 0;
@@ -27,7 +26,7 @@ var Level = 1;
 var score = 0;
 var lives = 5;
 var ShipAnim = 0;
-var score = 0;
+var bulletIndex;
 
 const HUD_BG = file("HUD_BG", 0); // load the ship frame1
 const PlayerShip_F1 = file("PlayerShip_F1", 0); // load the ship frame1
@@ -39,19 +38,15 @@ const Enemy1 = file("Enemy1", 0); // load the enemy gfx
 
 const heart = builtin("sHeart"); //Hearts for lives
 
-const bgL = file("bgL",0); // load the Left Background bottom layer image
+const bgL = file("bgL", 0); // load the Left Background bottom layer image
 const TopBgL = file("TopBgL",0); // load the Left Background Top layer image
 
-music("lrmusic.raw");
-
-
-
 // Position enemies and bullets before start of game ..
-
-for (var i = 0; i < level; ++i)
+music("lrmusic.raw");
+for (var i = 0; i < NUMBER_OF_ENEMIES; ++i)
 {
-    EnemySpawn(i, (i * 32), (i * 32) + 32);
     bulletsY[i] = -5;
+    EnemySpawn(i);
 }
 
 function fireBullet()
@@ -67,38 +62,23 @@ function fireBullet()
     }
 }
 
+function EnemyHitBullet(enemyIndex)
+{
+    score += 5;
+    //BGchange +=1;
+    EnemySpawn(enemyIndex - 1);
+    bulletsY[bulletIndex] = -5;    
+}
+
 function moveBullet(bulletIndex)
 {
-   if (bulletsY[bulletIndex] > 0)
-   {
+    if (bulletsY[bulletIndex] > 0)
+    {
         bulletsY[bulletIndex]-=5;  
+        io("COLLISION", 0, -1, EnemyHitBullet);
         sprite(bulletsX[bulletIndex], bulletsY[bulletIndex], Bullet);
-        
-        // Did we hit an enemy?
-        for (var i = 0; i < level; ++i)
-        {
-            if (collision(bulletsX[bulletIndex], bulletsY[bulletIndex], enemiesX[i], enemiesY[i]))
-            {
-               score += 5;
-               //BGchange +=1;
-               EnemySpawn(i, 32, 64);
-               bulletsY[bulletIndex] = -5;
-               break;
-            }
-        }
-   }
+    }
 }
-
-function collision(x1, y1, x2, y2)
-{
-    
-    return !((x2       >= (x1 + 4))  ||
-             ((x2 + 16)  <= x1)       ||
-             (y2       >= (y1 + 4))  ||
-             ((y2 + 16)  <= y1));
-
-}
-
 
 function waitForInput()
 {
@@ -120,23 +100,23 @@ function waitForInput()
 
 function bgScroll()
 {
-    for(var yOffset = 0; yOffset < 8; ++yOffset)
+    for(var yOffset = -220; yOffset < (8 * 55 - 220); yOffset += 55)
     {
-        var y = yOffset * 55 + bgLY - 220; 
+        var y = yOffset + bgLY; 
         mirror(false); sprite(32, y, bgL); 
         mirror(true);  sprite(172, y, bgL);
-        var y2 = yOffset * 55 + TopbgLY - 220; 
-        mirror(false); sprite(0, y2, TopBgL); 
+        var y2 = yOffset + TopbgLY; 
         mirror(true);  sprite(188, y2, TopBgL);
+        mirror(false); sprite(0, y2, TopBgL); 
     }
     
     bgLY+=2;
-    if(bgLY > 55) {bgLY = 0}
+    if(bgLY > 55) {bgLY = 0;}
     TopbgLY+=4;
-    if(TopbgLY > 55) {TopbgLY = 0}
+    if(TopbgLY > 55) {TopbgLY = 0;}
 }
 
-function EnemySpawn(enemyIndex, minY, maxY)
+function EnemySpawn(enemyIndex)
 {
         enemiesY[enemyIndex] = -random(20, 60);
         enemiesX[enemyIndex] = random(30, 180);
@@ -145,85 +125,69 @@ function EnemySpawn(enemyIndex, minY, maxY)
         enemiesS[enemyIndex] = random(2, 5);
 }
 
-
 function EnemyUpdate(i) 
 {
-
-        var minDirection = 0;
-        var maxDirection = 2;
-        var newDirection = 0; // 0 false, 1 true
-
-
-        // // Move Enemies ..
-        
-        enemiesY[i]+=enemiesS[i];
-
-        if (enemiesD[i] == 0)
-        {
-            if (enemiesX[i] > 30)
-            {
-                //console(enemiesX[i]);
-                enemiesX[i] = enemiesX[i] - 2;
-                //console(enemiesX[i]);
-            }
-                else
-                {
-                    minDirection = 1;
-                    newDirection = 1;
-                }
-        }
-
-        if (enemiesD[i] == 2)
-        {
-            if (enemiesX[i] < 200)
-            {
-                // console(enemiesX[i]);
-                enemiesX[i] = enemiesX[i] + 2;//Right
-                // console(enemiesX[i]);
-            }
-                else
-                {
-                    maxDirection = 1;
-                    newDirection = 1;
-                }
-        }
-
-        enemiesL[i] = enemiesL[i] - 1;
-
-
-        // New Direction?
-
-         if ((enemiesL[i] == 0) || (newDirection == 1))
-         {
-             enemiesD[i] = random(minDirection, maxDirection + 1);
-             enemiesL[i] = random(20, 40);
-         }
-        
-        if (enemiesY[i] > 176)
-        {
-            EnemySpawn(i, 32, 64);
-        }
-
-
-        // Render enemy ..
-
-        sprite(enemiesX[i], enemiesY[i], Enemy1);
-        
-        
-        // Have we collided?
-        
-        var collide = collision(PlayerX, PlayerY, enemiesX[i], enemiesY[i]);
-        
-        if (collide)
-        {
-             io("VOLUME", 127);
-             io("DURATION", 70);
-             sound(random(44, 47));
-             lives -=1; if (lives < 1) { highscore(score); exit(); }
-             //console("collision");
-            
-        }
     
+    var minDirection = 0;
+    var maxDirection = 2;
+    var newDirection = 0; // 0 false, 1 true
+
+
+    // // Move Enemies ..
+    
+    enemiesY[i]+=enemiesS[i];
+
+    if (enemiesD[i] == 0)
+    {
+        if (enemiesX[i] > 30)
+        {
+            //console(enemiesX[i]);
+            enemiesX[i] -= 2;
+            //console(enemiesX[i]);
+        }
+        else
+        {
+            minDirection = 1;
+            newDirection = 1;
+        }
+    }
+
+    if (enemiesD[i] == 2)
+    {
+        if (enemiesX[i] < 200)
+        {
+            // console(enemiesX[i]);
+            enemiesX[i] += 2;//Right
+            // console(enemiesX[i]);
+        }
+        else
+        {
+            maxDirection = 1;
+            newDirection = 1;
+        }
+    }
+
+    --enemiesL[i];
+
+
+    // New Direction?
+
+    if ((enemiesL[i] == 0) || (newDirection == 1))
+    {
+        enemiesD[i] = random(minDirection, maxDirection + 1);
+        enemiesL[i] = random(20, 40);
+    }
+    
+    if (enemiesY[i] > 176)
+    {
+        EnemySpawn(i);
+    }
+
+
+    // Render enemy ..
+
+    io("COLLISION", i + 1, 0);
+    sprite(enemiesX[i], enemiesY[i], Enemy1);
 }
 
 
@@ -246,6 +210,19 @@ function HUD()
         color(0);
 }
 
+function EnemyHitPlayer(enemyIndex)
+{
+    io("VOLUME", 127);
+    io("DURATION", 70);
+    sound(random(44, 47));
+    EnemySpawn(enemyIndex - 1);
+    lives -=1;
+    if (lives < 1) {
+        highscore(score);
+        exit();
+    }
+}
+
 function update()
 {
 
@@ -257,20 +234,20 @@ function update()
     
     bgScroll();
     waitForInput();
-    
-    
+
     if (score > 80)         level = 10;
-    else if (score > 40)    level = 7;
+    else if (score > 60)    level = 8;
+    else if (score > 40)    level = 6;
+    else if (score > 40)    level = 4;
     else level = 4;
 
-    for(var i = 0; i < level; ++i)
-    {
+    for(var i = 0; i < level; ++i) {
         EnemyUpdate(i);
         moveBullet(i);
     }
-    
-    
-    ShipAnim++;
+
+//    io("COLLISION", 0, -1, EnemyHitPlayer);
+    ++ShipAnim;
     if ((ShipAnim/4)%2==0)
         sprite(PlayerX, PlayerY, PlayerShip_F1);
     else
