@@ -22,7 +22,7 @@ const heartsX = new Array(NUMBER_OF_HEARTS);
 const heartsY = new Array(NUMBER_OF_HEARTS);
 
 var bgLY = 0;
-var topbgLY = 0;
+var topBgLY = 0;
 var score = 0;
 var lives = 5;
 var shipAnim = 0;
@@ -33,13 +33,13 @@ const playerShip_F2 = file("PlayerShip_F2", 0); // load the ship frame 2
 const playerShip_shadow = file("PlayerShip_shadow", 0); // load the ship shadow
 const Bullet = file("Bullet", 0); // Bullet
 
-const enemyImg = file("enemyImg", 0); // load the enemy gfx
+const enemyImg = file("Enemy", 0); // load the enemy gfx
 const heartImg = builtin("sHeart"); //Hearts for lives
 
 const bgL = file("bgL", 0); // load the Left Background bottom layer image
 const bgR = file("bgR", 0); // load the right Background bottom layer image
-const TopBgL = file("TopBgL",0); // load the Left Background Top layer image
-const TopBgR = file("TopBgR",0); // load the right Background Top layer image
+const topBgL = file("TopBgL",0); // load the Left Background Top layer image
+const topBgR = file("TopBgR",0); // load the right Background Top layer image
 
 
 //------------------------------------------------------------------------
@@ -106,10 +106,10 @@ function moveHeart(heartIndex) {
 
     // Move down ..
 
-    heartsY[heartIndex]+=2;
+    var y = heartsY[heartIndex]+=2;
 
 
-    if (heartsY[heartIndex] > 176) {
+    if (y > 176) {
         heartSpawn(heartIndex);
     }
 
@@ -121,15 +121,6 @@ function moveHeart(heartIndex) {
     
 }
 
-function enemySpawn(enemyIndex) {
-
-    enemiesY[enemyIndex] = -random(20, 60);
-    enemiesX[enemyIndex] = random(30, 180);
-    enemiesD[enemyIndex] = random(0, 3);
-    enemiesL[enemyIndex] = random(20, 40);
-
-}
-
 function moveEnemy(enemyIndex) {
 
     var minDirection = 0;
@@ -139,13 +130,20 @@ function moveEnemy(enemyIndex) {
 
     // Move down ..
 
-    enemiesY[enemyIndex]+= (2 + (enemyIndex / 3));
-
-
-    //Move left ..
+    var y = enemiesY[enemyIndex]+= (2 + (enemyIndex / 3));
     
-    if (enemiesD[enemyIndex] == 0) {
-        if (enemiesX[enemyIndex] > 30) {
+    if (y > 176) {
+        enemySpawn(enemyIndex);
+    }
+
+
+    // Move left ..
+    
+    var direction = enemiesD[enemyIndex];
+    var enemyX = enemiesX[enemyIndex];
+    
+    if (direction == 0) {
+        if (enemyX > 30) {
             enemiesX[enemyIndex] -= 2;
         }
         else {
@@ -156,8 +154,8 @@ function moveEnemy(enemyIndex) {
 
     // Move right ..
     
-    if (enemiesD[enemyIndex] == 2) {
-        if (enemiesX[enemyIndex] < 200) {
+    if (direction == 2) {
+        if (enemyX < 200) {
             enemiesX[enemyIndex] += 2;
         }
         else {
@@ -166,18 +164,14 @@ function moveEnemy(enemyIndex) {
         }
     }
 
-    --enemiesL[enemyIndex];
+    var length = --enemiesL[enemyIndex];
 
 
     // New Direction?
 
-    if ((enemiesL[enemyIndex] == 0) || (newDirection == true)) {
+    if (length == 0 || newDirection == true) {
         enemiesD[enemyIndex] = random(minDirection, maxDirection + 1);
-        enemiesL[enemyIndex] = random(20, 40);
-    }
-    
-    if (enemiesY[enemyIndex] > 176) {
-        enemySpawn(enemyIndex);
+        enemiesL[enemyIndex] = random(16, 32);
     }
 
 
@@ -188,10 +182,20 @@ function moveEnemy(enemyIndex) {
 
 }
 
+
+function enemySpawn(enemyIndex) {
+
+    enemiesY[enemyIndex] = -random(16, 64);
+    enemiesX[enemyIndex] = random(32, 192);
+    enemiesD[enemyIndex] = random(0, 3);
+    enemiesL[enemyIndex] = random(16, 32);
+
+}
+
 function heartSpawn(heartIndex) {
 
-    heartsY[heartIndex] = -random(0, 70);
-    heartsX[heartIndex] = random(30, 180);
+    heartsY[heartIndex] = -random(0, 128);
+    heartsX[heartIndex] = random(32, 192);
 
 }
 
@@ -217,16 +221,16 @@ function bgScroll() {
         sprite(32, y, bgL); 
         sprite(172, y, bgR);
         
-        y = yOffset + topbgLY; 
-        sprite(0, y, TopBgL); 
-        sprite(188, y, TopBgR);
+        y = yOffset + topBgLY; 
+        sprite(0, y, topBgL); 
+        sprite(188, y, topBgR);
         
     }
     
     bgLY+=2;
-    if (bgLY > 55) {bgLY = 0;}
-    topbgLY+=4;
-    if (topbgLY > 55) {topbgLY = 0;}
+    if (bgLY > 55)      {bgLY = 0;}
+    topBgLY+=4;
+    if (topBgLY > 55)   {topBgLY = 0;}
 }
 
 function waitForInput() {
