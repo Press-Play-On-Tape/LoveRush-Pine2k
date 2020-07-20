@@ -26,8 +26,10 @@ var topBgLY = 0;
 var score = 0;
 var lives = 5;
 var shipAnim = 0;
+var gameOver = false;
 
 const HUD_BG = file("HUD_BG", 0); 
+const gameOverImg = file("GameOver", 0); 
 const playerShip_F1 = file("PlayerShip_F1", 0); // load the ship frame1
 const playerShip_F2 = file("PlayerShip_F2", 0); // load the ship frame 2
 const playerShip_shadow = file("PlayerShip_shadow", 0); // load the ship shadow
@@ -50,7 +52,7 @@ music("lrmusic.raw");
 
 for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
     bulletsY[i] = -5;
-    enemySpawn(i);
+    enemySpawn(i, true, 0, 3);
     if (i < 4) heartSpawn(i);
 }
 
@@ -61,14 +63,16 @@ for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
 
 function enemyHitBullet(enemyIndex, bulletIndex) {
     
+    playSound();
     score += 5;
-    enemySpawn(enemyIndex - 1);
+    enemySpawn(enemyIndex - 1, true, 0, 3);
     bulletsY[bulletIndex >> 4 - 1] = -5;    
     
 }
 
 function playerHitHeart(playerIndex, heartIndex) {
     
+    playSound();
     score += 20;
     heartSpawn(heartIndex >> 8 - 1);
     bulletsY[bulletIndex >> 4 - 1] = -5;    
@@ -77,15 +81,14 @@ function playerHitHeart(playerIndex, heartIndex) {
 
 function enemyHitPlayer(enemyIndex, playerIndex) {
     
-    io("VOLUME", 127);
-    io("DURATION", 70);
-    sound(random(44, 47));
-    enemySpawn(enemyIndex - 1);
+    playSound();
+    enemySpawn(enemyIndex - 1, true, 0, 3);
     lives -=1;
     
     if (lives < 1) {
         highscore(score);
-        exit();
+        gameOver = true;
+
     }
     
 }
@@ -130,10 +133,10 @@ function moveEnemy(enemyIndex) {
 
     // Move down ..
 
-    var y = enemiesY[enemyIndex]+= (2 + (enemyIndex / 3));
+    var y = enemiesY[enemyIndex]+= (2 + (enemyIndex / 4));
     
     if (y > 176) {
-        enemySpawn(enemyIndex);
+        enemySpawn(enemyIndex, true, 0, 3);
     }
 
 
@@ -170,8 +173,7 @@ function moveEnemy(enemyIndex) {
     // New Direction?
 
     if (length == 0 || newDirection == true) {
-        enemiesD[enemyIndex] = random(minDirection, maxDirection + 1);
-        enemiesL[enemyIndex] = random(16, 32);
+        enemySpawn(enemyIndex, false, minDirection, maxDirection);
     }
 
 
@@ -183,13 +185,22 @@ function moveEnemy(enemyIndex) {
 }
 
 
-function enemySpawn(enemyIndex) {
+function enemySpawn(enemyIndex, reset, dirMin, dirMax) {
 
-    enemiesY[enemyIndex] = -random(16, 64);
-    enemiesX[enemyIndex] = random(32, 192);
-    enemiesD[enemyIndex] = random(0, 3);
+    if (reset) {
+        enemiesY[enemyIndex] = -random(16, 64);
+        enemiesX[enemyIndex] = random(32, 192);
+    }
+    
+    enemiesD[enemyIndex] = random(dirMin, dirMax);
     enemiesL[enemyIndex] = random(16, 32);
 
+}
+
+function playSound() {
+    io("VOLUME", 127);
+    io("DURATION", 70);
+    sound(random(44, 47));
 }
 
 function heartSpawn(heartIndex) {
@@ -264,32 +275,40 @@ function HUD() {
 function update() {
 
     fill(65)
-
     bgScroll();
-    waitForInput();
-
-    if (score > 240)        level = 10;
-    else if (score > 140)   level = 8;
-    else if (score > 40)    level = 6;
-
-    for(var i = 0; i< level; ++i)
-        moveEnemy(i);
-
-    for(var i = 0; i < level; ++i)
-        moveBullet(i);
-
-    ++shipAnim;
     
-    io("COLLISION", 1024, 0x0F, enemyHitPlayer);
-    if ((shipAnim/4)%2==0)
-        sprite(playerX, playerY, playerShip_F1);
-    else
-        sprite(playerX, playerY, playerShip_F2);
+    if (!gameOver) {
+        
+        waitForInput();
+    
+        if (score > 240)        level = 10;
+        else if (score > 140)   level = 8;
+        else if (score > 40)    level = 6;
+    
+        for(var i = 0; i< level; ++i)
+            moveEnemy(i);
+    
+        for(var i = 0; i < level; ++i)
+            moveBullet(i);
+    
+        ++shipAnim;
+        
+        io("COLLISION", 1024, 0x0F, enemyHitPlayer);
+        if ((shipAnim/4)%2==0)
+            sprite(playerX, playerY, playerShip_F1);
+        else
+            sprite(playerX, playerY, playerShip_F2);
+    
+        sprite(playerX+20, playerY+20, playerShip_shadow);
+    
+        for(var i = 0; i < NUMBER_OF_HEARTS; ++i)
+            moveHeart(i);
+    }
+    else {
+        
+        sprite(45, 75, gameOverImg);
 
-    sprite(playerX+20, playerY+20, playerShip_shadow);
-
-    for(var i = 0; i < NUMBER_OF_HEARTS; ++i)
-        moveHeart(i);
+    }
         
     HUD();
 }
