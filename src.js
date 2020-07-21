@@ -277,9 +277,10 @@ function update() {
     fill(65)
     bgScroll();
     
-    if (!gameOver) {
         
-        waitForInput();
+    waitForInput();
+    
+    if (!gameOver) {
     
         if (score > 240)        level = 10;
         else if (score > 140)   level = 8;
