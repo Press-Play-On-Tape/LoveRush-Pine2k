@@ -1,274 +1,314 @@
-if( file("images.res", 0) != 1 ){
+if ( file("images.res", 0) != 1 ){
     console("Could not find resources!");
     exit();
 }
 
+var playerX = 60;
+var playerY = 140;
+var level = 4;
 
-var PlayerX = 60;
-var PlayerY = 140;
+const NUMBER_OF_ENTITIES = 10;
+const NUMBER_OF_HEARTS = 4;
 
-var enemiesX = new Array(4);
-var enemiesY = new Array(4);
-var enemiesD = new Array(4);  // Direction where 0 = left, 1 = straight fown, 2 = right
-var enemiesL = new Array(4);  // Length of travel
-var enemiesS = new Array(4);  // Speed, 2 slow - 5 fastest
+const enemiesX = new Array(NUMBER_OF_ENTITIES);
+const enemiesY = new Array(NUMBER_OF_ENTITIES);
+const enemiesD = new Array(NUMBER_OF_ENTITIES);  // Direction where 0 = left, 1 = straight fown, 2 = right
+const enemiesL = new Array(NUMBER_OF_ENTITIES);  // Length of travel
 
-var bulletsX = new Array(4);
-var bulletsY = new Array(4);
+const bulletsX = new Array(NUMBER_OF_ENTITIES);
+const bulletsY = new Array(NUMBER_OF_ENTITIES);
 
+const heartsX = new Array(NUMBER_OF_HEARTS);
+const heartsY = new Array(NUMBER_OF_HEARTS);
 
-var BGchange = 65;
 var bgLY = 0;
-var TopbgLX = 0;
-var TopbgLY = 0;
-var Level = 1;
+var topBgLY = 0;
 var score = 0;
 var lives = 5;
-var ShipAnim = 0;
-var score = 0;
+var shipAnim = 0;
+var gameOver = false;
 
-const HUD_BG = file("HUD_BG", 0); // load the ship frame1
-const PlayerShip_F1 = file("PlayerShip_F1", 0); // load the ship frame1
-const PlayerShip_F2 = file("PlayerShip_F2", 0); // load the ship frame 2
-const PlayerShip_shadow = file("PlayerShip_shadow", 0); // load the ship shadow
+const HUD_BG = file("HUD_BG", 0); 
+const gameOverImg = file("GameOver", 0); 
+const playerShip_F1 = file("PlayerShip_F1", 0); // load the ship frame1
+const playerShip_F2 = file("PlayerShip_F2", 0); // load the ship frame 2
+const playerShip_shadow = file("PlayerShip_shadow", 0); // load the ship shadow
 const Bullet = file("Bullet", 0); // Bullet
 
-const Enemy1 = file("Enemy1", 0); // load the enemy gfx
+const enemyImg = file("Enemy", 0); // load the enemy gfx
+const heartImg = builtin("sHeart"); //Hearts for lives
 
-const heart = builtin("sHeart"); //Hearts for lives
-
-const bgL = file("bgL",0); // load the Left Background bottom layer image
-const TopBgL = file("TopBgL",0); // load the Left Background Top layer image
-
-music("lrmusic.raw");
+const bgL = file("bgL", 0); // load the Left Background bottom layer image
+const bgR = file("bgR", 0); // load the right Background bottom layer image
+const topBgL = file("TopBgL",0); // load the Left Background Top layer image
+const topBgR = file("TopBgR",0); // load the right Background Top layer image
 
 
+//------------------------------------------------------------------------
 
 // Position enemies and bullets before start of game ..
 
-for (var i = 0; i < 4; ++i)
-{
-    EnemySpawn(i, (i * 32), (i * 32) + 32);
+music("lrmusic.raw");
+
+for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
     bulletsY[i] = -5;
+    enemySpawn(i, true, 0, 3);
+    if (i < 4) heartSpawn(i);
 }
 
-function fireBullet()
-{
-    for (var i = 0; i < 4; ++i)
-    {
-       if (bulletsY[i] <= 0)
-       {
-            bulletsX[i] = PlayerX + 6;          
-            bulletsY[i] = PlayerY - 2;   
+
+
+//------------------------------------------------------------------------
+
+
+function enemyHitBullet(enemyIndex, bulletIndex) {
+    
+    playSound();
+    score += 5;
+    enemySpawn(enemyIndex - 1, true, 0, 3);
+    bulletsY[bulletIndex >> 4 - 1] = -5;    
+    
+}
+
+function playerHitHeart(playerIndex, heartIndex) {
+    
+    playSound();
+    score += 20;
+    heartSpawn(heartIndex >> 8 - 1);
+    bulletsY[bulletIndex >> 4 - 1] = -5;    
+    
+}
+
+function enemyHitPlayer(enemyIndex, playerIndex) {
+    
+    playSound();
+    enemySpawn(enemyIndex - 1, true, 0, 3);
+    lives -=1;
+    
+    if (lives < 1) {
+        highscore(score);
+        gameOver = true;
+
+    }
+    
+}
+
+function moveBullet(bulletIndex) {
+
+    if (bulletsY[bulletIndex] > 0) {
+        
+        bulletsY[bulletIndex]-=5;  
+        io("COLLISION", (1 + bulletIndex) << 4, 0x0F, enemyHitBullet);
+        sprite(bulletsX[bulletIndex], bulletsY[bulletIndex], Bullet);
+    }
+    
+}
+
+function moveHeart(heartIndex) {
+
+
+    // Move down ..
+
+    var y = heartsY[heartIndex]+=2;
+
+
+    if (y > 176) {
+        heartSpawn(heartIndex);
+    }
+
+
+    // Render enemy ..
+
+    io("COLLISION", (heartIndex + 1) << 8, 1024, playerHitHeart);
+    sprite(heartsX[heartIndex], heartsY[heartIndex], heartImg);
+    
+}
+
+function moveEnemy(enemyIndex) {
+
+    var minDirection = 0;
+    var maxDirection = 2;
+    var newDirection = false;
+
+
+    // Move down ..
+
+    var y = enemiesY[enemyIndex]+= (2 + (enemyIndex / 4));
+    
+    if (y > 176) {
+        enemySpawn(enemyIndex, true, 0, 3);
+    }
+
+
+    // Move left ..
+    
+    var direction = enemiesD[enemyIndex];
+    var enemyX = enemiesX[enemyIndex];
+    
+    if (direction == 0) {
+        if (enemyX > 30) {
+            enemiesX[enemyIndex] -= 2;
+        }
+        else {
+            minDirection = 2;
+            newDirection = true;
+        }
+    }
+
+    // Move right ..
+    
+    if (direction == 2) {
+        if (enemyX < 200) {
+            enemiesX[enemyIndex] += 2;
+        }
+        else {
+            maxDirection = 1;
+            newDirection = true;
+        }
+    }
+
+    var length = --enemiesL[enemyIndex];
+
+
+    // New Direction?
+
+    if (length == 0 || newDirection == true) {
+        enemySpawn(enemyIndex, false, minDirection, maxDirection);
+    }
+
+
+    // Render enemy ..
+
+    io("COLLISION", enemyIndex + 1, 0);
+    sprite(enemiesX[enemyIndex], enemiesY[enemyIndex], enemyImg);
+
+}
+
+
+function enemySpawn(enemyIndex, reset, dirMin, dirMax) {
+
+    if (reset) {
+        enemiesY[enemyIndex] = -random(16, 64);
+        enemiesX[enemyIndex] = random(32, 192);
+    }
+    
+    enemiesD[enemyIndex] = random(dirMin, dirMax);
+    enemiesL[enemyIndex] = random(16, 32);
+
+}
+
+function playSound() {
+    io("VOLUME", 127);
+    io("DURATION", 70);
+    sound(random(44, 47));
+}
+
+function heartSpawn(heartIndex) {
+
+    heartsY[heartIndex] = -random(0, 128);
+    heartsX[heartIndex] = random(32, 192);
+
+}
+
+function fireBullet() {
+    
+    for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
+        
+       if (bulletsY[i] <= 0) {
+            bulletsX[i] = playerX + 6;          
+            bulletsY[i] = playerY - 2;   
             break;
        }
+       
     }
-}
-
-function moveBullet(bulletIndex)
-{
-   if (bulletsY[bulletIndex] > 0)
-   {
-        bulletsY[bulletIndex]-=5;  
-        sprite(bulletsX[bulletIndex], bulletsY[bulletIndex], Bullet);
-        
-        // Did we hit an enemy?
-        for (var i = 0; i < 4; ++i)
-        {
-            if (collision(bulletsX[bulletIndex], bulletsY[bulletIndex], enemiesX[i], enemiesY[i]))
-            {
-               score += 5;
-               //BGchange +=1;
-               EnemySpawn(i, 32, 64);
-               bulletsY[bulletIndex] = -5;
-               break;
-            }
-        }
-   }
-}
-
-function collision(x1, y1, x2, y2)
-{
     
-    return !((x2       >= (x1 + 4))  ||
-             ((x2 + 16)  <= x1)       ||
-             (y2       >= (y1 + 4))  ||
-             ((y2 + 16)  <= y1));
-
 }
 
-
-function waitForInput()
-{
-    if((pressed("UP")) && (PlayerY > 18))
-        PlayerY-=2;
-    if((pressed("DOWN")) && (PlayerY < 160))
-        PlayerY+=2;
-    if((pressed("LEFT")) && (PlayerX > 20))
-        PlayerX-=2;
-    if((pressed("RIGHT")) && (PlayerX < 190))
-        PlayerX+=2;
-    if(justPressed("A"))
-    {
-        fireBullet();
-    }
-    if(pressed("C"))
-        exit();
-}
-
-function bgScroll()
-{
-    for(var yOffset = 0; yOffset < 8; ++yOffset)
-    {
-        var y = yOffset * 55 + bgLY - 220; 
-        mirror(false); sprite(32, y, bgL); 
-        mirror(true);  sprite(172, y, bgL);
-        var y2 = yOffset * 55 + TopbgLY - 220; 
-        mirror(false); sprite(0, y2, TopBgL); 
-        mirror(true);  sprite(188, y2, TopBgL);
+function bgScroll() {
+    
+    for(var yOffset = -220; yOffset < (8 * 55 - 220); yOffset += 55) {
+        
+        var y = yOffset + bgLY; 
+        sprite(32, y, bgL); 
+        sprite(172, y, bgR);
+        
+        y = yOffset + topBgLY; 
+        sprite(0, y, topBgL); 
+        sprite(188, y, topBgR);
+        
     }
     
     bgLY+=2;
-    if(bgLY > 55) {bgLY = 0}
-    TopbgLY+=4;
-    if(TopbgLY > 55) {TopbgLY = 0}
+    if (bgLY > 55)      {bgLY = 0;}
+    topBgLY+=4;
+    if (topBgLY > 55)   {topBgLY = 0;}
 }
 
-function EnemySpawn(enemyIndex, minY, maxY)
-{
-        enemiesY[enemyIndex] = -random(20, 60);
-        enemiesX[enemyIndex] = random(30, 180);
-        enemiesD[enemyIndex] = random(0, 3);
-        enemiesL[enemyIndex] = random(20, 40);
-        enemiesS[enemyIndex] = random(2, 5);
-}
-
-
-function EnemyUpdate(i) 
-{
-
-        var minDirection = 0;
-        var maxDirection = 2;
-        var newDirection = 0; // 0 false, 1 true
-
-
-        // // Move Enemies ..
-        
-        enemiesY[i]+=enemiesS[i];
-
-        if (enemiesD[i] == 0)
-        {
-            if (enemiesX[i] > 30)
-            {
-                //console(enemiesX[i]);
-                enemiesX[i] = enemiesX[i] - 2;
-                //console(enemiesX[i]);
-            }
-                else
-                {
-                    minDirection = 1;
-                    newDirection = 1;
-                }
-        }
-
-        if (enemiesD[i] == 2)
-        {
-            if (enemiesX[i] < 200)
-            {
-                // console(enemiesX[i]);
-                enemiesX[i] = enemiesX[i] + 2;//Right
-                // console(enemiesX[i]);
-            }
-                else
-                {
-                    maxDirection = 1;
-                    newDirection = 1;
-                }
-        }
-
-        enemiesL[i] = enemiesL[i] - 1;
-
-
-        // New Direction?
-
-         if ((enemiesL[i] == 0) || (newDirection == 1))
-         {
-             enemiesD[i] = random(minDirection, maxDirection + 1);
-             enemiesL[i] = random(20, 40);
-         }
-        
-        if (enemiesY[i] > 176)
-        {
-            EnemySpawn(i, 32, 64);
-        }
-
-
-        // Render enemy ..
-
-        sprite(enemiesX[i], enemiesY[i], Enemy1);
-        
-        
-        // Have we collided?
-        
-        var collide = collision(PlayerX, PlayerY, enemiesX[i], enemiesY[i]);
-        
-        if (collide)
-        {
-             io("VOLUME", 127);
-             io("DURATION", 70);
-             sound(random(44, 47));
-             lives -=1; if (lives < 1) { highscore(score); exit(); }
-             //console("collision");
-            
-        }
+function waitForInput() {
+    
+    if ((pressed("UP")) && (playerY > 18))           playerY-=2;
+    if ((pressed("DOWN")) && (playerY < 160))        playerY+=2;
+    if ((pressed("LEFT")) && (playerX > 20))         playerX-=2;
+    if ((pressed("RIGHT")) && (playerX < 190))       playerX+=2;
+    
+    if (justPressed("A"))                            fireBullet();
+    if (pressed("C"))                                exit();
     
 }
 
-
-function HUD()
-{
-       for( var x = 0; x < 220; x+=4 )
-       {
-           sprite(x, 0, HUD_BG);
-       }
-        
-        for(var i=0; i<lives; ++i)
-        {
-            sprite(110 + (i * 8), 4, heart);
-        }
-
-        color(7);
-        cursor(8,4)
-        print(("SCORE ")); 
-        print(score);
-        color(0);
-}
-
-function update()
-{
-
-    fill(65)
-    //fill(BGchange) // Crazy Background Effect but take 2% progmem
-    //if (BGchange < 70)
-    //BGchange +=1;
-    //else BGchange = 65
+function HUD() {
     
-    bgScroll();
-    waitForInput();
+    sprite(0, 0, HUD_BG);
 
-    for(var i = 0; i< 4; ++i)
-    {
-        EnemyUpdate(i);
-        moveBullet(i);
+    for(var i=0; i<lives; ++i) {
+        sprite(110 + (i * 8), 4, heartImg);
     }
     
+    color(7);
+    cursor(8,4)
+    print(("SCORE ")); 
+    print(score);
+    color(0);
+}
+
+
+function update() {
+
+    fill(65)
+    bgScroll();
     
-    ShipAnim++;
-    if ((ShipAnim/4)%2==0)
-        sprite(PlayerX, PlayerY, PlayerShip_F1);
-    else
-        sprite(PlayerX, PlayerY, PlayerShip_F2);
+    if (!gameOver) {
         
-    sprite(PlayerX+20, PlayerY+20, PlayerShip_shadow);
+        waitForInput();
+    
+        if (score > 240)        level = 10;
+        else if (score > 140)   level = 8;
+        else if (score > 40)    level = 6;
+    
+        for(var i = 0; i< level; ++i)
+            moveEnemy(i);
+    
+        for(var i = 0; i < level; ++i)
+            moveBullet(i);
+    
+        ++shipAnim;
+        
+        io("COLLISION", 1024, 0x0F, enemyHitPlayer);
+        if ((shipAnim/4)%2==0)
+            sprite(playerX, playerY, playerShip_F1);
+        else
+            sprite(playerX, playerY, playerShip_F2);
+    
+        sprite(playerX+20, playerY+20, playerShip_shadow);
+    
+        for(var i = 0; i < NUMBER_OF_HEARTS; ++i)
+            moveHeart(i);
+    }
+    else {
+        
+        sprite(45, 75, gameOverImg);
+
+    }
+        
     HUD();
 }
