@@ -24,19 +24,24 @@ const heartsY = new Array(NUMBER_OF_HEARTS);
 var bgLY = 0;
 var topBgLY = 0;
 var score = 0;
-var lives = 5;
+var lives = 59;
 var shipAnim = 0;
-var gameOver = false;
+var big = 0;
 
 const HUD_BG = file("HUD_BG", 0); 
-const gameOverImg = file("GameOver", 0); 
-const playerShip_F1 = file("PlayerShip_F1", 0); // load the ship frame1
-const playerShip_F2 = file("PlayerShip_F2", 0); // load the ship frame 2
+const gameOverImg = file("GameOver", 0);
+
+const playerSprites = [
+    file("PlayerShip_F1", 0), // load the ship frame1
+    file("PlayerShip_F2", 0)  // load the ship frame 2
+    ];
+    
 const playerShip_shadow = file("PlayerShip_shadow", 0); // load the ship shadow
 const Bullet = file("Bullet", 0); // Bullet
 
 const enemyImg = file("Enemy", 0); // load the enemy gfx
-const heartImg = builtin("sHeart"); //Hearts for lives
+const heartImg = builtin("icon21"); 
+const hudHeartImg = builtin("sHeart"); //Hearts for lives
 
 const bgL = file("bgL", 0); // load the Left Background bottom layer image
 const bgR = file("bgR", 0); // load the right Background bottom layer image
@@ -48,12 +53,15 @@ const topBgR = file("TopBgR",0); // load the right Background Top layer image
 
 // Position enemies and bullets before start of game ..
 
+io("LOOP", 1);
 music("lrmusic.raw");
 
+fill(65);
+
 for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
+    heartsY[i&3] = 200;
     bulletsY[i] = -5;
-    enemySpawn(i, true, 0, 3);
-    if (i < 4) heartSpawn(i);
+    enemySpawn(i);
 }
 
 
@@ -61,20 +69,27 @@ for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
 //------------------------------------------------------------------------
 
 
-function enemyHitBullet(enemyIndex, bulletIndex) {
-    
-    playSound();
-    score += 5;
-    enemySpawn(enemyIndex - 1, true, 0, 3);
+function somethingHitBullet(otherIndex, bulletIndex) {
+    if(otherIndex > 255){
+        lives -= 10;
+        heartsY[otherIndex >> 8 - 1] = 200;
+        playSound();
+        score -= 20;
+    } else {
+        playSound();
+        score += 5;
+        enemySpawn(otherIndex - 1);
+    }
     bulletsY[bulletIndex >> 4 - 1] = -5;    
-    
 }
 
 function playerHitHeart(playerIndex, heartIndex) {
-    
+
+    lives += 10;
     playSound();
     score += 20;
-    heartSpawn(heartIndex >> 8 - 1);
+    // heartSpawn(heartIndex >> 8 - 1);
+    heartsY[heartIndex >> 8 - 1] = 200;
     bulletsY[bulletIndex >> 4 - 1] = -5;    
     
 }
@@ -82,132 +97,61 @@ function playerHitHeart(playerIndex, heartIndex) {
 function enemyHitPlayer(enemyIndex, playerIndex) {
     
     playSound();
-    enemySpawn(enemyIndex - 1, true, 0, 3);
-    lives -=1;
-    
-    if (lives < 1) {
-        highscore(score);
-        gameOver = true;
+    enemySpawn(enemyIndex - 1);
+    lives -=10;
 
-    }
-    
 }
 
-function moveBullet(bulletIndex) {
-
-    if (bulletsY[bulletIndex] > 0) {
-        
-        bulletsY[bulletIndex]-=5;  
-        io("COLLISION", (1 + bulletIndex) << 4, 0x0F, enemyHitBullet);
-        sprite(bulletsX[bulletIndex], bulletsY[bulletIndex], Bullet);
-    }
-    
-}
-
-function moveHeart(heartIndex) {
-
-
-    // Move down ..
-
-    var y = heartsY[heartIndex]+=2;
-
-
-    if (y > 176) {
-        heartSpawn(heartIndex);
-    }
-
-
-    // Render enemy ..
-
-    io("COLLISION", (heartIndex + 1) << 8, 1024, playerHitHeart);
-    sprite(heartsX[heartIndex], heartsY[heartIndex], heartImg);
-    
-}
 
 function moveEnemy(enemyIndex) {
 
-    var minDirection = 0;
-    var maxDirection = 2;
-    var newDirection = false;
-
-
     // Move down ..
 
-    var y = enemiesY[enemyIndex]+= (2 + (enemyIndex / 4));
+    var y = enemiesY[enemyIndex] += (2 + (enemyIndex / 4));
     
-    if (y > 176) {
-        enemySpawn(enemyIndex, true, 0, 3);
-    }
-
-
-    // Move left ..
+    // Move left / right
     
     var direction = enemiesD[enemyIndex];
     var enemyX = enemiesX[enemyIndex];
     
-    if (direction == 0) {
-        if (enemyX > 30) {
-            enemiesX[enemyIndex] -= 2;
-        }
-        else {
-            minDirection = 2;
-            newDirection = true;
-        }
-    }
-
-    // Move right ..
-    
-    if (direction == 2) {
-        if (enemyX < 200) {
-            enemiesX[enemyIndex] += 2;
-        }
-        else {
-            maxDirection = 1;
-            newDirection = true;
-        }
-    }
-
-    var length = --enemiesL[enemyIndex];
-
+    var newX = enemyX + direction;
+    var newDirection = newX < 30 || newX > 200 || --enemiesL[enemyIndex] <= 0 || y > 176;
 
     // New Direction?
 
-    if (length == 0 || newDirection == true) {
-        enemySpawn(enemyIndex, false, minDirection, maxDirection);
+    if (newDirection) {
+        enemySpawn(enemyIndex);
+        if(y <= 176){
+            newX = enemyX;
+            enemiesY[enemyIndex] = y;
+        } else {
+            newX = enemiesX[enemyIndex];
+        }
     }
+    
+    enemiesX[enemyIndex] = newX;
 
+    io("SCALE", 1 + (enemyIndex < big));
 
     // Render enemy ..
 
     io("COLLISION", enemyIndex + 1, 0);
-    sprite(enemiesX[enemyIndex], enemiesY[enemyIndex], enemyImg);
+    sprite(newX, enemiesY[enemyIndex], enemyImg);
 
 }
 
 
-function enemySpawn(enemyIndex, reset, dirMin, dirMax) {
-
-    if (reset) {
-        enemiesY[enemyIndex] = -random(16, 64);
-        enemiesX[enemyIndex] = random(32, 192);
-    }
-    
-    enemiesD[enemyIndex] = random(dirMin, dirMax);
+function enemySpawn(enemyIndex) {
+    enemiesY[enemyIndex] = -random(16, 64);
+    enemiesX[enemyIndex] = random(32, 192);
+    enemiesD[enemyIndex] = random(-2, 3);
     enemiesL[enemyIndex] = random(16, 32);
-
 }
 
 function playSound() {
     io("VOLUME", 127);
     io("DURATION", 70);
     sound(random(44, 47));
-}
-
-function heartSpawn(heartIndex) {
-
-    heartsY[heartIndex] = -random(0, 128);
-    heartsX[heartIndex] = random(32, 192);
-
 }
 
 function fireBullet() {
@@ -244,24 +188,22 @@ function bgScroll() {
     if (topBgLY > 55)   {topBgLY = 0;}
 }
 
-function waitForInput() {
-    
-    if ((pressed("UP")) && (playerY > 18))           playerY-=2;
-    if ((pressed("DOWN")) && (playerY < 160))        playerY+=2;
-    if ((pressed("LEFT")) && (playerX > 20))         playerX-=2;
-    if ((pressed("RIGHT")) && (playerX < 190))       playerX+=2;
-    
-    if (justPressed("A"))                            fireBullet();
-    if (pressed("C"))                                exit();
-    
-}
-
 function HUD() {
     
     sprite(0, 0, HUD_BG);
 
-    for(var i=0; i<lives; ++i) {
-        sprite(110 + (i * 8), 4, heartImg);
+    var x = 110;
+    var heartsToDraw = lives / 10;
+
+    while(heartsToDraw > 5){
+        sprite(x, -1, heartImg);
+        x += 16;
+        heartsToDraw -= 5;
+    }
+
+    while(heartsToDraw--) {
+        sprite(x, 4, hudHeartImg);
+        x += 8;
     }
     
     color(7);
@@ -274,42 +216,82 @@ function HUD() {
 
 function update() {
 
-    fill(65)
     bgScroll();
     
-        
-    waitForInput();
-    
-    if (!gameOver) {
-    
-        if (score > 240)        level = 10;
-        else if (score > 140)   level = 8;
-        else if (score > 40)    level = 6;
-    
-        for(var i = 0; i< level; ++i)
-            moveEnemy(i);
-    
-        for(var i = 0; i < level; ++i)
-            moveBullet(i);
-    
-        ++shipAnim;
-        
-        io("COLLISION", 1024, 0x0F, enemyHitPlayer);
-        if ((shipAnim/4)%2==0)
-            sprite(playerX, playerY, playerShip_F1);
-        else
-            sprite(playerX, playerY, playerShip_F2);
-    
-        sprite(playerX+20, playerY+20, playerShip_shadow);
-    
-        for(var i = 0; i < NUMBER_OF_HEARTS; ++i)
-            moveHeart(i);
-    }
-    else {
-        
-        sprite(45, 75, gameOverImg);
+    var px = playerX + ((pressed("RIGHT") - pressed("LEFT")) << 2);
+    if(px>20 && px<190) playerX = px;
+    var py = playerY + ((pressed("DOWN") - pressed("UP")) << 2);
+    if(py>18 && py<160) playerY = py;
+    if (justPressed("A")) fireBullet();
+    if (pressed("C")) exit();
 
+    if (lives < 1) {
+        highscore(score);
+        sprite(45, 75, gameOverImg);
+        HUD();
+        return;
     }
+
+    
+    // Decrement the lives using the counter ..
+
+    timer++;
+    if (timer % 32 == 0) lives--;
+
+
+    // Update the level based on the scoro ..
+
+    if (score > 240){       level = 10; big = (score - 240) >> 7; }
+    else if (score > 140)   level = 8;
+    else if (score > 40)    level = 6;
+
+    for(var i = 0; i < level; ++i)
+        moveEnemy(i);
+
+
+    // Render the player ..
+    
+    ++shipAnim;
+    io("COLLISION", 1024, 0x0F, enemyHitPlayer);
+    i = playerSprites[(shipAnim>>2)&1];
+    sprite(playerX, playerY, i);
+    sprite(playerX+20, playerY+20, playerShip_shadow);
+
+
+    // Move and render the hearts ..
+
+    for (var i = 0; i < NUMBER_OF_HEARTS; ++i){
+        // Move down ..
+    
+        if (heartsY[i] > 176) {
+            // heartSpawn(i);
+            heartsY[i] = -random(0, 128);
+            heartsX[i] = random(32, 192);
+        }
         
+        var y = heartsY[i]+=2;
+        var x = heartsX[i];
+
+        // Make hearts wobble
+        x += sin(y+(i<<2)<<4) >> 5;
+        
+        // Render heart ..
+    
+        io("COLLISION", (i + 1) << 8, 1024, playerHitHeart);
+        sprite(x, y, heartImg);
+    }
+
+
+
+    // Move and render the bullets ..
+
+    for(var i = 0; i < level; ++i){
+        bulletsY[i]-=5;  
+        io("COLLISION", (1 + i) << 4, 0xF0F, somethingHitBullet);
+        sprite(bulletsX[i], bulletsY[i], Bullet);
+    }
+
+    if (score < 0) score = 0;
+    if (lives < 0) lives = 0;
     HUD();
 }
