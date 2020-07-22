@@ -31,7 +31,8 @@ var big = 0;
 const HUD_BG = file("HUD_BG", 0); 
 const gameOverImg = file("GameOver", 0);
 
-const playerSprites = [
+const playerSprites =
+    [
     file("PlayerShip_F1", 0), // load the ship frame1
     file("PlayerShip_F2", 0)  // load the ship frame 2
     ];
@@ -54,7 +55,7 @@ const topBgR = file("TopBgR",0); // load the right Background Top layer image
 // Position enemies and bullets before start of game ..
 
 io("LOOP", 1);
-music("lrmusic.raw");
+music("lrmusicNew.raw");
 
 fill(65);
 
@@ -71,13 +72,13 @@ for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
 
 function somethingHitBullet(otherIndex, bulletIndex) {
     if(otherIndex > 255){
-        lives -= 10;
+        //lives -= 10;
         heartsY[otherIndex >> 8 - 1] = 200;
         playSound();
         score -= 20;
     } else {
         playSound();
-        score += 5;
+        score += 10;
         enemySpawn(otherIndex - 1);
     }
     bulletsY[bulletIndex >> 4 - 1] = -5;    
