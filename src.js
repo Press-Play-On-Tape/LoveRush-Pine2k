@@ -72,7 +72,7 @@ for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
 
 function somethingHitBullet(otherIndex, bulletIndex) {
     if(otherIndex > 255){
-        lives -= 10;
+        //lives -= 10;
         heartsY[otherIndex >> 8 - 1] = 200;
         playSound();
         score -= 20;
@@ -247,7 +247,7 @@ function update() {
     else if (score > 40)    level = 6;
 
     for(var i = 0; i < level; ++i)
-        moveEnemy(i);
+        moveEnemy(i); io("SCALE", 1);
 
 
     // Render the player ..
