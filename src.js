@@ -72,7 +72,7 @@ for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
 
 function somethingHitBullet(otherIndex, bulletIndex) {
     if(otherIndex > 255){
-        //lives -= 10;
+        lives -= 10;
         heartsY[otherIndex >> 8 - 1] = 200;
         playSound();
         score -= 20;
@@ -99,7 +99,7 @@ function enemyHitPlayer(enemyIndex, playerIndex) {
     
     playSound();
     enemySpawn(enemyIndex - 1);
-    lives -=10;
+    lives -=20;
 
 }
 
