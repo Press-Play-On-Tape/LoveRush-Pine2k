@@ -28,6 +28,8 @@ var lives = 59;
 var shipAnim = 0;
 var big = 0;
 
+var timer = 0;
+
 const HUD_BG = file("HUD_BG", 0); 
 const gameOverImg = file("GameOver", 0);
 
@@ -91,7 +93,7 @@ function playerHitHeart(playerIndex, heartIndex) {
     score += 20;
     // heartSpawn(heartIndex >> 8 - 1);
     heartsY[heartIndex >> 8 - 1] = 200;
-    bulletsY[bulletIndex >> 4 - 1] = -5;    
+    //bulletsY[bulletIndex >> 4 - 1] = -5;    
     
 }
 
@@ -240,7 +242,7 @@ function update() {
     if (timer % 32 == 0) lives--;
 
 
-    // Update the level based on the scoro ..
+    // Update the level based on the score ..
 
     if (score > 240){       level = 10; big = (score - 240) >> 7; }
     else if (score > 140)   level = 8;
