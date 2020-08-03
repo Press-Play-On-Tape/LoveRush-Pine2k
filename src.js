@@ -7,6 +7,15 @@ var playerX = 60;
 var playerY = 140;
 var level = 4;
 
+var bgLY = 0;
+var topBgLY = 0;
+var score = 0;
+var lives = 59;
+var shipAnim = 0;
+var big = 0;
+
+var timer = 0;
+
 const NUMBER_OF_ENTITIES = 10;
 const NUMBER_OF_HEARTS = 4;
 
@@ -21,14 +30,6 @@ const bulletsY = new Array(NUMBER_OF_ENTITIES);
 const heartsX = new Array(NUMBER_OF_HEARTS);
 const heartsY = new Array(NUMBER_OF_HEARTS);
 
-var bgLY = 0;
-var topBgLY = 0;
-var score = 0;
-var lives = 59;
-var shipAnim = 0;
-var big = 0;
-
-var timer = 0;
 
 const HUD_BG = file("HUD_BG", 0); 
 const gameOverImg = file("GameOver", 0);
@@ -58,15 +59,29 @@ const topBgR = file("TopBgR",0); // load the right Background Top layer image
 
 io("LOOP", 1);
 music("lrmusicNew.raw");
+reset();
 
-fill(65);
 
-for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
-    heartsY[i&3] = 200;
-    bulletsY[i] = -5;
-    enemySpawn(i);
+//------------------------------------------------------------------------
+
+function reset() {
+
+    // playerX = 60;
+    // playerY = 140;
+    level = 4;
+    score = 0;
+    lives = 59;
+    big = 0;
+
+//    fill(65);
+    
+    for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
+        heartsY[i&3] = 200;
+        bulletsY[i] = -5;
+        enemySpawn(i);
+    }
+
 }
-
 
 
 //------------------------------------------------------------------------
@@ -228,10 +243,15 @@ function update() {
     if (justPressed("A")) fireBullet();
     if (pressed("C")) exit();
 
+
+
+    // Game Over .. press B to restart.
+    
     if (lives < 1) {
         highscore(score);
         sprite(45, 75, gameOverImg);
         HUD();
+        if (justPressed("B")) reset();
         return;
     }
 
