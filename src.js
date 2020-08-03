@@ -89,36 +89,35 @@ function reset()
 
 
 function somethingHitBullet(otherIndex, bulletIndex) {
+    bulletsY[bulletIndex >> 4 - 1] = -5;
     if(otherIndex > 255)
     {
         heartsY[otherIndex >> 8 - 1] = 200;
-        playSound();
         score -= 20;
     } else
         {
-            playSound();
             score += 10;
             enemySpawn(otherIndex - 1);
     }
-    bulletsY[bulletIndex >> 4 - 1] = -5;    
+    playSound();
 }
 
 function playerHitHeart(playerIndex, heartIndex)
 {
 
     lives += 10;
-    playSound();
     score += 20;
     heartsY[heartIndex >> 8 - 1] = 200;
+    //playSound();
     
 }
 
 function enemyHitPlayer(enemyIndex, playerIndex)
 {
     
-    playSound();
     enemySpawn(enemyIndex - 1);
     lives -=20;
+    playSound();
 
 }
 
@@ -214,6 +213,7 @@ function HUD() {
     sprite(0, 0, HUD_BG);
 
     var x = 110;
+    lives = max(0, lives);
     var heartsToDraw = lives / 10;
 
     while(heartsToDraw > 5){
@@ -318,6 +318,5 @@ function update() {
     }
 
     if (score < 0) score = 0;
-    if (lives < 0) lives = 0;
     HUD();
 }
