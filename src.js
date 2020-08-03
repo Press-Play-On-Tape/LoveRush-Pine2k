@@ -64,16 +64,17 @@ reset();
 
 //------------------------------------------------------------------------
 
-function reset() {
+function reset()
+{
 
-    // playerX = 60;
-    // playerY = 140;
+    //playerX = 60;
+    playerY = 140;
     level = 4;
     score = 0;
     lives = 59;
     big = 0;
 
-//    fill(65);
+    fill(65);
     
     for (var i = 0; i < NUMBER_OF_ENTITIES; ++i) {
         heartsY[i&3] = 200;
@@ -88,31 +89,32 @@ function reset() {
 
 
 function somethingHitBullet(otherIndex, bulletIndex) {
-    if(otherIndex > 255){
-        //lives -= 10;
+    if(otherIndex > 255)
+    {
         heartsY[otherIndex >> 8 - 1] = 200;
         playSound();
         score -= 20;
-    } else {
-        playSound();
-        score += 10;
-        enemySpawn(otherIndex - 1);
+    } else
+        {
+            playSound();
+            score += 10;
+            enemySpawn(otherIndex - 1);
     }
     bulletsY[bulletIndex >> 4 - 1] = -5;    
 }
 
-function playerHitHeart(playerIndex, heartIndex) {
+function playerHitHeart(playerIndex, heartIndex)
+{
 
     lives += 10;
     playSound();
     score += 20;
-    // heartSpawn(heartIndex >> 8 - 1);
     heartsY[heartIndex >> 8 - 1] = 200;
-    //bulletsY[bulletIndex >> 4 - 1] = -5;    
     
 }
 
-function enemyHitPlayer(enemyIndex, playerIndex) {
+function enemyHitPlayer(enemyIndex, playerIndex)
+{
     
     playSound();
     enemySpawn(enemyIndex - 1);
@@ -121,7 +123,8 @@ function enemyHitPlayer(enemyIndex, playerIndex) {
 }
 
 
-function moveEnemy(enemyIndex) {
+function moveEnemy(enemyIndex)
+{
 
     // Move down ..
 
